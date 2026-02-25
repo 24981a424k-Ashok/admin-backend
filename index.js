@@ -10,12 +10,24 @@ const newspaperRoutes = require('./routes/newspapers');
 
 const app = express();
 
-// Middleware
-app.use(cors());
+// CORS - Allow both local dev and Vercel frontend
+app.use(cors({
+    origin: [
+        'http://localhost:5173',
+        'http://localhost:3000',
+        'https://admin-frontend-eta-silk.vercel.app'
+    ],
+    credentials: true
+}));
 app.use(express.json());
 app.use((req, res, next) => {
     console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
     next();
+});
+
+// Root health check
+app.get('/', (req, res) => {
+    res.json({ status: 'UniIntel Admin Backend running', version: '2.0', db: 'MongoDB' });
 });
 
 // Routes
