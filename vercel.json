@@ -13,6 +13,9 @@
         }
     ],
     "env": {
-        "PYTHON_API_URL": "https://uni-intel-ml-innovator2.hf.space"
+        "PYTHON_API_URL": "https://uni-intel-ml-innovator2.hf.space",
+        "JWT_SECRET": "supersecretkey_change_me",
+        "ADMIN_EMAIL": "chaparapuashokreddy666@gmail.com,seaachiever1819@gmail.com",
+        "ADMIN_PASSWORD": "UNIINTEL@666"
     }
 }

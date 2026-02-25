@@ -62,10 +62,15 @@ app.post('/api/sync-intelligence', authenticateAdmin, async (req, res) => {
     }
 });
 
-// MongoDB Connection
-mongoose.connect(process.env.MONGODB_URI)
-    .then(() => console.log('Connected to MongoDB'))
-    .catch(err => console.error('Could not connect to MongoDB', err));
+// MongoDB Connection (optional — server works without it using in-memory fallback)
+const mongoUri = process.env.MONGODB_URI;
+if (mongoUri && !mongoUri.includes('localhost')) {
+    mongoose.connect(mongoUri)
+        .then(() => console.log('Connected to MongoDB Atlas'))
+        .catch(err => console.error('MongoDB connection failed (using in-memory fallback):', err.message));
+} else {
+    console.log('No cloud MongoDB URI set — using in-memory fallback for ads/newspapers');
+}
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
