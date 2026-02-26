@@ -1,28 +1,9 @@
 const express = require('express');
 const router = express.Router();
 const jwt = require('jsonwebtoken');
+const axios = require('axios');
 
-// In-memory fallback store (used when MongoDB is not available)
-const memAds = new Map();
-let memIdCounter = 1;
-
-// Try to require MongoDB model, fallback to null
-let Advertisement = null;
-try {
-    Advertisement = require('../models/Advertisement');
-} catch (e) {
-    console.warn('Advertisement model not available, using in-memory store');
-}
-
-// Mongoose connection check helper
-function isMongoConnected() {
-    try {
-        const mongoose = require('mongoose');
-        return mongoose.connection.readyState === 1;
-    } catch {
-        return false;
-    }
-}
+const PYTHON_API_URL = process.env.PYTHON_API_URL || 'https://uni-intel-ml-innovator2.hf.space';
 
 // Middleware to verify admin
 const authenticateAdmin = (req, res, next) => {
@@ -41,13 +22,8 @@ const authenticateAdmin = (req, res, next) => {
 // GET all ads (public)
 router.get('/', async (req, res) => {
     try {
-        if (isMongoConnected() && Advertisement) {
-            const ads = await Advertisement.find().sort({ created_at: -1 }).limit(10);
-            return res.json(ads);
-        }
-        // In-memory fallback
-        const ads = Array.from(memAds.values()).slice(-10).reverse();
-        return res.json(ads);
+        const response = await axios.get(`${PYTHON_API_URL}/api/ads`, { timeout: 10000 });
+        return res.json(response.data);
     } catch (err) {
         console.error('Get ads error:', err.message);
         res.json([]); // Always return empty array, never 500
@@ -62,17 +38,13 @@ router.post('/', authenticateAdmin, async (req, res) => {
             return res.status(400).json({ error: 'image_url and caption are required' });
         }
 
-        if (isMongoConnected() && Advertisement) {
-            const ad = new Advertisement({ image_url, caption, target_node });
-            await ad.save();
-            return res.json({ success: true, ad });
-        }
+        const response = await axios.post(`${PYTHON_API_URL}/api/ads`, {
+            image_url,
+            caption,
+            target_node
+        }, { timeout: 10000 });
 
-        // In-memory fallback
-        const id = String(memIdCounter++);
-        const ad = { _id: id, image_url, caption, target_node, created_at: new Date().toISOString() };
-        memAds.set(id, ad);
-        return res.json({ success: true, ad });
+        return res.json(response.data);
     } catch (err) {
         console.error('Create ad error:', err.message);
         res.status(500).json({ error: err.message });
@@ -82,13 +54,9 @@ router.post('/', authenticateAdmin, async (req, res) => {
 // DELETE ad (admin only)
 router.delete('/:id', authenticateAdmin, async (req, res) => {
     try {
-        if (isMongoConnected() && Advertisement) {
-            await Advertisement.findByIdAndDelete(req.params.id);
-            return res.json({ success: true });
-        }
-        // In-memory fallback
-        memAds.delete(req.params.id);
-        return res.json({ success: true });
+        const { id } = req.params;
+        const response = await axios.delete(`${PYTHON_API_URL}/api/ads/${id}`, { timeout: 10000 });
+        return res.json(response.data);
     } catch (err) {
         console.error('Delete ad error:', err.message);
         res.status(500).json({ error: err.message });

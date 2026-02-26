@@ -1,26 +1,9 @@
 const express = require('express');
 const router = express.Router();
 const jwt = require('jsonwebtoken');
+const axios = require('axios');
 
-// In-memory fallback store
-const memPapers = new Map();
-let memIdCounter = 1;
-
-let Newspaper = null;
-try {
-    Newspaper = require('../models/Newspaper');
-} catch (e) {
-    console.warn('Newspaper model not available, using in-memory store');
-}
-
-function isMongoConnected() {
-    try {
-        const mongoose = require('mongoose');
-        return mongoose.connection.readyState === 1;
-    } catch {
-        return false;
-    }
-}
+const PYTHON_API_URL = process.env.PYTHON_API_URL || 'https://uni-intel-ml-innovator2.hf.space';
 
 const authenticateAdmin = (req, res, next) => {
     const authHeader = req.headers.authorization;
@@ -38,12 +21,8 @@ const authenticateAdmin = (req, res, next) => {
 // GET all newspapers (public)
 router.get('/', async (req, res) => {
     try {
-        if (isMongoConnected() && Newspaper) {
-            const papers = await Newspaper.find().sort({ name: 1 });
-            return res.json(papers);
-        }
-        const papers = Array.from(memPapers.values()).sort((a, b) => a.name.localeCompare(b.name));
-        return res.json(papers);
+        const response = await axios.get(`${PYTHON_API_URL}/api/newspapers`, { timeout: 10000 });
+        return res.json(response.data);
     } catch (err) {
         console.error('Get newspapers error:', err.message);
         res.json([]);
@@ -53,21 +32,20 @@ router.get('/', async (req, res) => {
 // POST create newspaper (admin only)
 router.post('/', authenticateAdmin, async (req, res) => {
     try {
-        const { name, url, country, image_url } = req.body;
+        const { name, url, country, logo_text, logo_color } = req.body;
         if (!name || !url) {
             return res.status(400).json({ error: 'name and url are required' });
         }
 
-        if (isMongoConnected() && Newspaper) {
-            const paper = new Newspaper({ name, url, country, image_url });
-            await paper.save();
-            return res.json({ success: true, paper });
-        }
+        const response = await axios.post(`${PYTHON_API_URL}/api/newspapers`, {
+            name,
+            url,
+            country,
+            logo_text,
+            logo_color
+        }, { timeout: 10000 });
 
-        const id = String(memIdCounter++);
-        const paper = { _id: id, name, url, country, image_url, created_at: new Date().toISOString() };
-        memPapers.set(id, paper);
-        return res.json({ success: true, paper });
+        return res.json(response.data);
     } catch (err) {
         console.error('Create newspaper error:', err.message);
         res.status(500).json({ error: err.message });
@@ -77,12 +55,9 @@ router.post('/', authenticateAdmin, async (req, res) => {
 // DELETE newspaper (admin only)
 router.delete('/:id', authenticateAdmin, async (req, res) => {
     try {
-        if (isMongoConnected() && Newspaper) {
-            await Newspaper.findByIdAndDelete(req.params.id);
-            return res.json({ success: true });
-        }
-        memPapers.delete(req.params.id);
-        return res.json({ success: true });
+        const { id } = req.params;
+        const response = await axios.delete(`${PYTHON_API_URL}/api/newspapers/${id}`, { timeout: 10000 });
+        return res.json(response.data);
     } catch (err) {
         console.error('Delete newspaper error:', err.message);
         res.status(500).json({ error: err.message });
