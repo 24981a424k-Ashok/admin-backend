@@ -33,16 +33,12 @@ router.get('/', async (req, res) => {
 // POST create ad (admin only)
 router.post('/', authenticateAdmin, async (req, res) => {
     try {
-        const { image_url, caption, target_node } = req.body;
+        const { image_url, caption } = req.body;
         if (!image_url || !caption) {
             return res.status(400).json({ error: 'image_url and caption are required' });
         }
 
-        const response = await axios.post(`${PYTHON_API_URL}/api/ads`, {
-            image_url,
-            caption,
-            target_node
-        }, { timeout: 10000 });
+        const response = await axios.post(`${PYTHON_API_URL}/api/ads`, req.body, { timeout: 10000 });
 
         return res.json(response.data);
     } catch (err) {
