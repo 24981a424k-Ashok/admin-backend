@@ -4,20 +4,34 @@ const jwt = require('jsonwebtoken');
 
 router.post('/login', async (req, res) => {
     const { email, password } = req.body;
+    
+    // Clean up env vars (strip quotes and spaces if user pasted them from .env files)
+    const rawEmails = process.env.ADMIN_EMAIL || '';
+    const cleanEmails = rawEmails.replace(/['"]/g, ''); // Remove common quote marks
+    const authorizedEmails = cleanEmails.split(',').map(e => e.trim().toLowerCase());
+    
+    const rawPass = process.env.ADMIN_PASSWORD || '';
+    const adminPassword = rawPass.replace(/['"]/g, '').trim();
 
-    // Hardcoded check for multiple admins
-    const authorizedEmails = (process.env.ADMIN_EMAIL || '').split(',').map(e => e.trim().toLowerCase());
-
-    if (authorizedEmails.includes(email.trim().toLowerCase()) && password === process.env.ADMIN_PASSWORD) {
-        const token = jwt.sign({ email }, process.env.JWT_SECRET, { expiresIn: '1d' });
+    if (authorizedEmails.includes(email.trim().toLowerCase()) && password === adminPassword) {
+        const token = jwt.sign({ email }, process.env.JWT_SECRET || 'static_secret', { expiresIn: '1d' });
         return res.json({ status: 'success', token, role: 'admin' });
     }
 
-    // If not admin, we might still allow "login" but tag as visitor
-    // However the prompt says: "If user is chaparapuashokreddy666@gmail.com -> show both Website & Admin options. If not admin -> go straight to website only"
-    // So we just return the role.
+    // Diagnostic info (Temporary for debugging)
+    const isEmailOk = authorizedEmails.includes(email.trim().toLowerCase());
+    const debugMsg = !isEmailOk ? `Email matching failed. Authorized: [${authorizedEmails.join('|')}]` : "Password mismatch";
 
-    res.json({ status: 'success', token: null, role: 'user' });
+    res.json({ status: 'success', token: null, role: 'user', debug: debugMsg });
+});
+
+router.get('/config-check', (req, res) => {
+    res.json({
+        raw_emails: process.env.ADMIN_EMAIL,
+        password_exists: !!process.env.ADMIN_PASSWORD,
+        secret_exists: !!process.env.JWT_SECRET,
+        current_time: new Date().toISOString()
+    });
 });
 
 module.exports = router;
