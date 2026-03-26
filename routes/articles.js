@@ -58,6 +58,18 @@ router.delete('/:id', authenticateAdmin, async (req, res) => {
     }
 });
 
+// Update article (proxied to Python backend)
+router.put('/:id', authenticateAdmin, async (req, res) => {
+    const { id } = req.params;
+    try {
+        const response = await axios.put(`${PYTHON_API_URL}/api/articles/${id}`, req.body, { timeout: 10000 });
+        res.json(response.data);
+    } catch (err) {
+        console.error('Update Article Error:', err.message);
+        res.status(500).json({ error: `Failed to update article: ${err.message}` });
+    }
+});
+
 // Refresh live site (trigger digest regeneration)
 router.post('/refresh', authenticateAdmin, async (req, res) => {
     try {
