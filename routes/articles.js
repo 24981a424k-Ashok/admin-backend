@@ -23,11 +23,26 @@ const authenticateAdmin = (req, res, next) => {
 // Get all articles (proxied from Python backend)
 router.get('/', authenticateAdmin, async (req, res) => {
     try {
-        const response = await axios.get(`${PYTHON_API_URL}/api/articles`, { timeout: 10000 });
+        const { category } = req.query;
+        let url = `${PYTHON_API_URL}/api/articles`;
+        if (category) url += `?category=${encodeURIComponent(category)}`;
+        
+        const response = await axios.get(url, { timeout: 10000 });
         res.json(response.data);
     } catch (err) {
         console.error('Get Articles Error:', err.message);
         res.status(500).json({ error: 'Failed to fetch articles from intelligence backend', details: err.message });
+    }
+});
+
+// Create manual student article (proxied to Python backend)
+router.post('/student/articles', authenticateAdmin, async (req, res) => {
+    try {
+        const response = await axios.post(`${PYTHON_API_URL}/api/student/articles`, req.body, { timeout: 10000 });
+        res.json(response.data);
+    } catch (err) {
+        console.error('Create Student Article Error:', err.message);
+        res.status(500).json({ error: `Failed to create student article: ${err.message}` });
     }
 });
 
