@@ -10,13 +10,24 @@ const newspaperRoutes = require('./routes/newspapers');
 
 const app = express();
 
-// CORS - Allow both local dev and Vercel frontend
+// CORS - Allow local dev and all production frontends
 app.use(cors({
-    origin: [
-        'http://localhost:5173',
-        'http://localhost:3000',
-        'https://admin-frontend-eta-silk.vercel.app'
-    ],
+    origin: function (origin, callback) {
+        // Allow requests with no origin (like mobile apps or curl requests)
+        if (!origin) return callback(null, true);
+        const allowedOrigins = [
+            'http://localhost:5173',
+            'http://localhost:3000',
+            'https://admin-frontend-eta-silk.vercel.app',
+            'https://intel.uniintel.in'
+        ];
+        // Also allow any vercel.app subdomain (to cover dynamic Vercel deployments)
+        if (allowedOrigins.indexOf(origin) !== -1 || origin.endsWith('.vercel.app') || origin.endsWith('.hf.space')) {
+            callback(null, true);
+        } else {
+            callback(new Error('Not allowed by CORS'));
+        }
+    },
     credentials: true
 }));
 app.use(express.json());
