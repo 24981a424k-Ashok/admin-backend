@@ -3,7 +3,7 @@ const router = express.Router();
 const jwt = require('jsonwebtoken');
 const axios = require('axios');
 
-const PYTHON_API_URL = process.env.PYTHON_API_URL || 'https://uni-intel-ml-innovator2.hf.space';
+const PYTHON_API_URL = process.env.PYTHON_API_URL || 'https://uni-intel-ml-innovator3.hf.space';
 
 // Middleware to verify admin token
 const authenticateAdmin = (req, res, next) => {
