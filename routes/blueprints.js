@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const Blueprint = require('../models/Blueprint');
+const History = require('../models/History');
 const mongoose = require('mongoose');
 
 // In-Memory fallback for Vercel when MongoDB is not ready/connected
@@ -68,6 +69,19 @@ router.post('/', async (req, res) => {
                 blueprint = new Blueprint({ name, structure });
                 await blueprint.save();
             }
+
+            // Record save history
+            try {
+                const historyRecord = new History({
+                    blueprint_id: blueprint._id,
+                    structure: blueprint.structure,
+                    action: 'save'
+                });
+                await historyRecord.save();
+            } catch (histErr) {
+                console.error('Failed to save history:', histErr.message);
+            }
+
             return res.json(blueprint);
         } else {
             // Log but don't fail! This is the key change for "fast fix"
@@ -94,11 +108,42 @@ router.post('/publish/:id', async (req, res) => {
         if (mongoose.connection.readyState === 1 && !id.startsWith('mem_')) {
             await Blueprint.updateMany({}, { is_published: false });
             const blueprint = await Blueprint.findByIdAndUpdate(id, { is_published: true, updated_at: Date.now() }, { new: true });
+            
+            // Record history
+            try {
+                const historyRecord = new History({
+                    blueprint_id: id,
+                    structure: blueprint.structure,
+                    action: 'publish'
+                });
+                await historyRecord.save();
+            } catch (histErr) {
+                console.error('Failed to save publish history:', histErr.message);
+            }
+
             return res.json(blueprint);
         }
         res.json(memoryStore["Campaign Node"]);
     } catch (err) {
         res.status(500).json({ error: err.message });
+    }
+});
+
+// GET HISTORY
+router.get('/history/:id', async (req, res) => {
+    try {
+        if (mongoose.connection.readyState === 1 && !req.params.id.startsWith('mem_')) {
+            const history = await History.find({ blueprint_id: req.params.id })
+                                         .sort({ timestamp: -1 })
+                                         .limit(20)
+                                         .lean();
+            return res.json(history);
+        }
+        // Fallback for memory store
+        res.json([]);
+    } catch (err) {
+        console.error('History fetch error:', err.message);
+        res.json([]);
     }
 });
 

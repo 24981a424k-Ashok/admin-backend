@@ -3,7 +3,9 @@ const router = express.Router();
 const jwt = require('jsonwebtoken');
 const axios = require('axios');
 
-const PYTHON_API_URL = process.env.PYTHON_API_URL || 'https://uni-intel-ml-innovator3.hf.space';
+const PYTHON_API_URL = process.env.PYTHON_API_URL || 'https://uni12345-ai-news1.hf.space';
+// Ensure the URL doesn't have a trailing slash for consistency
+const API_BASE = PYTHON_API_URL.endsWith('/') ? PYTHON_API_URL.slice(0, -1) : PYTHON_API_URL;
 
 // Middleware to verify admin token
 const authenticateAdmin = (req, res, next) => {
@@ -24,7 +26,7 @@ const authenticateAdmin = (req, res, next) => {
 router.get('/', authenticateAdmin, async (req, res) => {
     try {
         const { category } = req.query;
-        let url = `${PYTHON_API_URL}/api/articles`;
+        let url = `${API_BASE}/api/articles`;
         if (category) url += `?category=${encodeURIComponent(category)}`;
         
         const response = await axios.get(url, { timeout: 10000 });
@@ -38,7 +40,7 @@ router.get('/', authenticateAdmin, async (req, res) => {
 // Create manual student article (proxied to Python backend)
 router.post('/student/articles', authenticateAdmin, async (req, res) => {
     try {
-        const response = await axios.post(`${PYTHON_API_URL}/api/student/articles`, req.body, { timeout: 10000 });
+        const response = await axios.post(`${API_BASE}/api/student/articles`, req.body, { timeout: 10000 });
         res.json(response.data);
     } catch (err) {
         console.error('Create Student Article Error:', err.message);
@@ -50,7 +52,7 @@ router.post('/student/articles', authenticateAdmin, async (req, res) => {
 router.delete('/:id', authenticateAdmin, async (req, res) => {
     const { id } = req.params;
     try {
-        const response = await axios.delete(`${PYTHON_API_URL}/api/articles/${id}`, { timeout: 10000 });
+        const response = await axios.delete(`${API_BASE}/api/articles/${id}`, { timeout: 10000 });
         res.json(response.data);
     } catch (err) {
         console.error('Delete Article Error:', err.message);
@@ -62,7 +64,7 @@ router.delete('/:id', authenticateAdmin, async (req, res) => {
 router.put('/:id', authenticateAdmin, async (req, res) => {
     const { id } = req.params;
     try {
-        const response = await axios.put(`${PYTHON_API_URL}/api/articles/${id}`, req.body, { timeout: 10000 });
+        const response = await axios.put(`${API_BASE}/api/articles/${id}`, req.body, { timeout: 10000 });
         res.json(response.data);
     } catch (err) {
         console.error('Update Article Error:', err.message);
@@ -73,7 +75,7 @@ router.put('/:id', authenticateAdmin, async (req, res) => {
 // Refresh live site (trigger digest regeneration)
 router.post('/refresh', authenticateAdmin, async (req, res) => {
     try {
-        const response = await axios.post(`${PYTHON_API_URL}/api/refresh-digest`, {}, { timeout: 30000 });
+        const response = await axios.post(`${API_BASE}/api/refresh-digest`, {}, { timeout: 30000 });
         res.json(response.data);
     } catch (err) {
         console.error('Refresh Failed:', err.message);
