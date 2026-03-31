@@ -7,6 +7,7 @@ const blueprintRoutes = require('./routes/blueprints');
 const articleRoutes = require('./routes/articles');
 const adRoutes = require('./routes/ads');
 const newspaperRoutes = require('./routes/newspapers');
+const historyRoutes = require('./routes/history');
 
 const app = express();
 
@@ -47,6 +48,7 @@ app.use('/api/blueprints', blueprintRoutes);
 app.use('/api/articles', articleRoutes);
 app.use('/api/ads', adRoutes);
 app.use('/api/newspapers', newspaperRoutes);
+app.use('/api/history', historyRoutes);
 const axios = require('axios');
 const jwt = require('jsonwebtoken');
 

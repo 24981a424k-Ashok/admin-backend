@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const jwt = require('jsonwebtoken');
 const axios = require('axios');
+const Protocol = require('../models/Protocol');
 
 const PYTHON_API_URL = process.env.PYTHON_API_URL || 'https://uni12345-ai-news1.hf.space';
 
@@ -40,6 +41,18 @@ router.post('/', authenticateAdmin, async (req, res) => {
 
         const response = await axios.post(`${PYTHON_API_URL}/api/ads`, req.body, { timeout: 10000 });
 
+        // Log protocol
+        try {
+            const log = new Protocol({
+                admin_user: req.user.email || 'Admin',
+                action: 'create',
+                target_type: 'ad',
+                target_id: response.data?.ad?.id?.toString() || 'unknown',
+                details: `Created campaign node (ad): ${req.body.caption}`
+            });
+            await log.save();
+        } catch (le) { console.error('Protocol Log Error:', le.message); }
+
         return res.json(response.data);
     } catch (err) {
         console.error('Create ad error:', err.message);
@@ -52,6 +65,19 @@ router.delete('/:id', authenticateAdmin, async (req, res) => {
     try {
         const { id } = req.params;
         const response = await axios.delete(`${PYTHON_API_URL}/api/ads/${id}`, { timeout: 10000 });
+        
+        // Log protocol
+        try {
+            const log = new Protocol({
+                admin_user: req.user.email || 'Admin',
+                action: 'delete',
+                target_type: 'ad',
+                target_id: id,
+                details: `Deleted campaign node (ad) #${id}`
+            });
+            await log.save();
+        } catch (le) { console.error('Protocol Log Error:', le.message); }
+
         return res.json(response.data);
     } catch (err) {
         console.error('Delete ad error:', err.message);

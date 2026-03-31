@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const jwt = require('jsonwebtoken');
 const axios = require('axios');
+const Protocol = require('../models/Protocol');
 
 const PYTHON_API_URL = process.env.PYTHON_API_URL || 'https://uni12345-ai-news1.hf.space';
 // Ensure the URL doesn't have a trailing slash for consistency
@@ -41,6 +42,19 @@ router.get('/', authenticateAdmin, async (req, res) => {
 router.post('/student/articles', authenticateAdmin, async (req, res) => {
     try {
         const response = await axios.post(`${API_BASE}/api/student/articles`, req.body, { timeout: 10000 });
+        
+        // Log protocol
+        try {
+            const log = new Protocol({
+                admin_user: req.user.email || 'Admin',
+                action: 'create',
+                target_type: 'article',
+                target_id: response.data?.article?.id?.toString() || 'unknown',
+                details: `Manually added student article: ${req.body.title}`
+            });
+            await log.save();
+        } catch (le) { console.error('Protocol Log Error:', le.message); }
+
         res.json(response.data);
     } catch (err) {
         console.error('Create Student Article Error:', err.message);
@@ -53,6 +67,19 @@ router.delete('/:id', authenticateAdmin, async (req, res) => {
     const { id } = req.params;
     try {
         const response = await axios.delete(`${API_BASE}/api/articles/${id}`, { timeout: 10000 });
+        
+        // Log protocol
+        try {
+            const log = new Protocol({
+                admin_user: req.user.email || 'Admin',
+                action: 'delete',
+                target_type: 'article',
+                target_id: id,
+                details: `Deleted intelligence asset node #${id}`
+            });
+            await log.save();
+        } catch (le) { console.error('Protocol Log Error:', le.message); }
+
         res.json(response.data);
     } catch (err) {
         console.error('Delete Article Error:', err.message);
@@ -65,6 +92,19 @@ router.put('/:id', authenticateAdmin, async (req, res) => {
     const { id } = req.params;
     try {
         const response = await axios.put(`${API_BASE}/api/articles/${id}`, req.body, { timeout: 10000 });
+        
+        // Log protocol
+        try {
+            const log = new Protocol({
+                admin_user: req.user.email || 'Admin',
+                action: 'update',
+                target_type: 'article',
+                target_id: id,
+                details: `Updated intelligence asset node #${id}: ${req.body.title}`
+            });
+            await log.save();
+        } catch (le) { console.error('Protocol Log Error:', le.message); }
+
         res.json(response.data);
     } catch (err) {
         console.error('Update Article Error:', err.message);
