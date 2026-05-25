@@ -3,6 +3,21 @@ const router = express.Router();
 const Blueprint = require('../models/Blueprint');
 const History = require('../models/History');
 const mongoose = require('mongoose');
+const jwt = require('jsonwebtoken');
+
+// Auth Middleware
+const authenticateAdmin = (req, res, next) => {
+    const authHeader = req.headers.authorization;
+    if (!authHeader) return res.status(401).json({ error: 'No token provided' });
+    const token = authHeader.split(' ')[1];
+    try {
+        const decoded = jwt.verify(token, process.env.JWT_SECRET || 'supersecretkey_change_me');
+        req.user = decoded;
+        next();
+    } catch (err) {
+        return res.status(401).json({ error: 'Invalid token' });
+    }
+};
 
 // In-Memory fallback for Vercel when MongoDB is not ready/connected
 let memoryStore = {
@@ -51,7 +66,7 @@ router.get('/active', async (req, res) => {
 });
 
 // CREATE/UPDATE
-router.post('/', async (req, res) => {
+router.post('/', authenticateAdmin, async (req, res) => {
     const { name, structure } = req.body;
     try {
         if (!name || !structure) return res.status(400).json({ error: 'Missing name or structure' });
@@ -96,7 +111,7 @@ router.post('/', async (req, res) => {
 });
 
 // PUBLISH
-router.post('/publish/:id', async (req, res) => {
+router.post('/publish/:id', authenticateAdmin, async (req, res) => {
     try {
         const id = req.params.id;
         

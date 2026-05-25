@@ -6,7 +6,7 @@ const jwt = require('jsonwebtoken');
 const mongoose = require('mongoose');
 
 const app = express();
-const PYTHON_API_URL = (process.env.PYTHON_API_URL || 'https://postgresbackenduniarc-production.up.railway.app').replace(/\/$/, '');
+const PYTHON_API_URL = (process.env.PYTHON_API_URL || 'https://finalbackend-production-9218.up.railway.app').replace(/\/$/, '');
 const JWT_SECRET = process.env.JWT_SECRET || 'supersecretkey_change_me';
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || '';
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || '';
@@ -264,14 +264,15 @@ app.post('/api/config', authenticateAdmin, async (req, res) => {
     }
 });
 
-app.get('/api/history', authenticateAdmin, async (req, res) => {
-    try {
-        const r = await axios.get(`${PYTHON_API_URL}/api/admin/history`, { ...pyHeaders(), timeout: 10000 });
-        res.json(r.data);
-    } catch (err) {
-        res.status(500).json({ error: 'History unavailable', details: err.message });
-    }
-});
+// Commented out to resolve endpoint shadowing; GET /api/history is managed by historyRoutes subrouter below.
+// app.get('/api/history', authenticateAdmin, async (req, res) => {
+//     try {
+//         const r = await axios.get(`${PYTHON_API_URL}/api/admin/history`, { ...pyHeaders(), timeout: 10000 });
+//         res.json(r.data);
+//     } catch (err) {
+//         res.status(500).json({ error: 'History unavailable', details: err.message });
+//     }
+// });
 
 app.post('/api/sync-intelligence', authenticateAdmin, async (req, res) => {
     try {

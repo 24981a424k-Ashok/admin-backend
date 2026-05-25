@@ -1,7 +1,9 @@
 const express = require('express');
 const router = express.Router();
-const Protocol = require('../models/Protocol');
 const jwt = require('jsonwebtoken');
+const axios = require('axios');
+
+const PYTHON_API_URL = (process.env.PYTHON_API_URL || 'https://finalbackend-production-9218.up.railway.app').replace(/\/$/, '');
 
 // Auth Middleware
 const authenticateAdmin = (req, res, next) => {
@@ -9,36 +11,28 @@ const authenticateAdmin = (req, res, next) => {
     if (!authHeader) return res.status(401).json({ error: 'No token provided' });
     const token = authHeader.split(' ')[1];
     try {
-        const decoded = jwt.verify(token, process.env.JWT_SECRET || 'secret');
+        const decoded = jwt.verify(token, process.env.JWT_SECRET || 'supersecretkey_change_me');
         req.user = decoded;
         next();
-    } catch (err) { res.status(401).json({ error: 'Invalid token' }); }
+    } catch (err) { 
+        return res.status(401).json({ error: 'Invalid token' }); 
+    }
 };
 
-// GET full history
+const pyHeaders = () => ({
+    headers: { 'Authorization': `Bearer ${process.env.ADMIN_JWT_SECRET || ''}`, 'Content-Type': 'application/json' }
+});
+
+// GET full history from Python backend (PostgreSQL database)
 router.get('/', authenticateAdmin, async (req, res) => {
     try {
-        const history = await Protocol.find().sort({ timestamp: -1 }).limit(100);
-        res.json(history);
+        const r = await axios.get(`${PYTHON_API_URL}/api/admin/history`, { ...pyHeaders(), timeout: 10000 });
+        res.json(r.data);
     } catch (err) {
+        console.error('Failed to fetch history from Python backend:', err.message);
         res.status(500).json({ error: 'Failed to fetch protocol history' });
     }
 });
 
-// Helper for other routes to log actions
-router.logAction = async (adminId, action, type, id, details) => {
-    try {
-        const record = new Protocol({
-            admin_user: adminId,
-            action: action,
-            target_type: type,
-            target_id: id,
-            details: details
-        });
-        await record.save();
-    } catch (err) {
-        console.error('Logging failed:', err.message);
-    }
-};
-
 module.exports = router;
+

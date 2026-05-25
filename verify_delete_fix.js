@@ -1,9 +1,19 @@
 const Database = require('better-sqlite3');
 const path = require('path');
 const dbPath = path.resolve(__dirname, '../ai-news-agent/data/news.db');
-const db = new Database(dbPath);
+
+let db;
+try {
+    db = new Database(dbPath);
+} catch (e) {
+    console.warn('[SQLite] Database init skipped or failed:', e.message);
+}
 
 async function verifyDeletion() {
+    if (!db) {
+        console.error("FAILURE: SQLite database not initialized.");
+        return;
+    }
     console.log("Starting deletion verification...");
 
     // 1. Insert dummy article
