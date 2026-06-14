@@ -6,7 +6,7 @@ const jwt = require('jsonwebtoken');
 const mongoose = require('mongoose');
 
 const app = express();
-const PYTHON_API_URL = (process.env.PYTHON_API_URL || 'https://finalbackend-production-9218.up.railway.app').trim().replace(/\/$/, '');
+const PYTHON_API_URL = (process.env.PYTHON_API_URL || 'https://api.uniintel.in').trim().replace(/\/$/, '');
 const JWT_SECRET = process.env.JWT_SECRET || 'supersecretkey_change_me';
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || '';
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || '';
