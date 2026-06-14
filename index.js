@@ -6,7 +6,7 @@ const jwt = require('jsonwebtoken');
 const mongoose = require('mongoose');
 
 const app = express();
-const PYTHON_API_URL = (process.env.PYTHON_API_URL || 'https://finalbackend-production-9218.up.railway.app').replace(/\/$/, '');
+const PYTHON_API_URL = (process.env.PYTHON_API_URL || 'https://finalbackend-production-9218.up.railway.app').trim().replace(/\/$/, '');
 const JWT_SECRET = process.env.JWT_SECRET || 'supersecretkey_change_me';
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || '';
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || '';
@@ -79,7 +79,7 @@ app.get('/api/articles', authenticateAdmin, async (req, res) => {
         const { category } = req.query;
         let url = `${PYTHON_API_URL}/api/admin/articles`;
         if (category) url += `?category=${encodeURIComponent(category)}`;
-        const r = await axios.get(url, { ...pyHeaders(req.headers['x-admin-token']), timeout: 15000 });
+        const r = await axios.get(url, { ...pyHeaders(), timeout: 15000 });
         res.json(r.data);
     } catch (err) {
         res.status(500).json({ error: 'Failed to fetch articles', details: err.message });
